@@ -1,23 +1,46 @@
 
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 2.8.3)
 project(ipopt_example)
 
-set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall")
-# set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
+add_compile_options(-std=c++11)
 
-set(IPOPT_LIBRARY_DIRS /usr/local/lib)
-set(IPOPT_INCLUDE_DIRS /usr/local/include/coin)
+find_package(catkin REQUIRED COMPONENTS
+  roscpp
+  rospy
+  std_msgs
+)
 
-message("ipopt binary path is: " ${IPOPT_LIBRARY_DIRS} )
-message("ipopt include path is: " ${IPOPT_INCLUDE_DIRS} )
+set(IPOPT_DIR "/home/david/software/Ipopt-3.12.8")
+if(IS_DIRECTORY ${IPOPT_DIR}/build/include/coin)
+  set(IPOPT_INCLUDE_DIRS ${IPOPT_DIR}/build/include/coin)
+  set(IPOPT_LIBRARIES    ${IPOPT_DIR}/build/lib/libipopt.so)
+else()
+  message(WARNING "IPOPT directory \"" ${IPOPT_DIR} "\" NOT found "
+                  "-> Not compiling ifopt_ipopt. \n"
+                  "Specify path to your installed IPOPT installation here.")
+  return()
+endif()
 
-include_directories(${IPOPT_INCLUDE_DIRS} ${CMAKE_SOURCE_DIR}/include)
-link_directories(${IPOPT_LIBRARY_DIRS})
 
-add_library(ipopt_interface ipopt_interface.cpp)
 
-add_executable(ipopt_example main.cpp)
+catkin_package(
+  INCLUDE_DIRS include ${IPOPT_INCLUDE_DIRS}
 
-target_link_libraries(ipopt_example ipopt_interface)
-target_link_libraries(ipopt_example ipopt)
+)
+
+###########
+## Build ##
+###########
+
+## Specify additional locations of header files
+## Your package locations should be listed before other locations
+include_directories(
+  include
+  ${IPOPT_INCLUDE_DIRS}
+  ${catkin_INCLUDE_DIRS}
+)
+
+add_library(ipopt_interface src/ipopt_interface.cpp)
+add_executable(ipopt_example src/main.cpp)
+target_link_libraries(ipopt_example ${catkin_LIBRARIES} ${IPOPT_LIBRARIES} ipopt_interface)
+
